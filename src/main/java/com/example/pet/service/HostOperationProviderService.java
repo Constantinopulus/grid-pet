@@ -17,13 +17,9 @@ import java.util.stream.Collectors;
 @Service
 public class HostOperationProviderService {
 
-    private final EngineType engineType;
+    private final EngineType engineType = EngineType.SGE;
 
     private Map<EngineType, HostProvider> providers;
-
-    public HostOperationProviderService(@Value("${grid.engine.type}") final EngineType engineType) {
-        this.engineType = engineType;
-    }
 
     public Listing<Host> hostListing() {
         return getProvider().listHosts();
