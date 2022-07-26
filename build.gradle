@@ -44,6 +44,11 @@ dependencies {
 	// Collection4
 	implementation "org.apache.commons:commons-collections4:$commonsVersion"
 
+	/*JAXB API*/
+	implementation "jakarta.xml.bind:jakarta.xml.bind-api:$jakartaBindingVersion"
+	implementation "com.sun.xml.bind:jaxb-impl:$jaxbImplVersion"
+	implementation "jakarta.activation:jakarta.activation-api:$jakartaActivationVersion"
+
 	implementation 'org.springframework.boot:spring-boot-starter'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
