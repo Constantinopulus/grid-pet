@@ -1,7 +1,8 @@
 plugins {
-	id 'org.springframework.boot' version '2.7.3-SNAPSHOT'
-	id 'io.spring.dependency-management' version '1.0.12.RELEASE'
+	id 'pmd'
 	id 'java'
+	id "org.springframework.boot" version "$springBootVersion"
+	id "io.spring.dependency-management" version "$springDependencyManagementVersion"
 }
 
 group = 'com.pet'
@@ -21,6 +22,28 @@ repositories {
 }
 
 dependencies {
+	implementation "junit:junit:$junitVersion"
+
+	/* Lombok */
+	compileOnly "org.projectlombok:lombok:$lombokVersion"
+	annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+	testCompileOnly "org.projectlombok:lombok:$lombokVersion"
+	testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
+
+	/* Spring */
+	implementation "org.springframework.boot:spring-boot-starter-web:$springBootVersion"
+
+	/*SpringFox*/
+	implementation "io.springfox:springfox-boot-starter:$swaggerVersion"
+
+	/* JUNIT */
+	testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion"
+	testImplementation "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion"
+	testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
+
+	// Collection4
+	implementation "org.apache.commons:commons-collections4:$commonsVersion"
+
 	implementation 'org.springframework.boot:spring-boot-starter'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
@@ -29,4 +52,10 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+pmd {
+	ruleSetFiles = files("$rootDir/config/pmd/pmd-ruleset.xml")
+	ruleSets = []
+	consoleOutput = true
 }
