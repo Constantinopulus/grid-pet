@@ -17,7 +17,7 @@ public class HostController {
 
     private final HostOperationProviderService hostOperationProviderService;
 
-    @GetMapping
+    @PostMapping
     @ResponseStatus(HttpStatus.OK)
     @ApiOperation(value = "Lists of host nodes",
             notes = "Returns list that contains information about host",
