@@ -1,6 +1,9 @@
 package com.example.pet.provider.host.sge;
 
+import com.example.pet.cmd.SimpleCmdExecutor;
+import com.example.pet.entity.CommandResult;
 import com.example.pet.entity.EngineType;
+import com.example.pet.entity.HostFilter;
 import com.example.pet.entity.Listing;
 import com.example.pet.entity.host.Host;
 import com.example.pet.entity.host.sge.SgeHost;
@@ -9,44 +12,29 @@ import com.example.pet.entity.host.sge.SgeHostProperty;
 import com.example.pet.entity.host.sge.SgeHostValue;
 import com.example.pet.provider.host.HostProvider;
 import com.example.pet.provider.utils.JaxbUtils;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.example.pet.provider.utils.NumberParseUtils.*;
 
 @Service
+@RequiredArgsConstructor
 public class SgeHostProvider implements HostProvider {
 
-    private static String QHOST_XML = "<?xml version='1.0'?>"
-            + "<qhost xmlns:xsd=\"http://arc.liv.ac.uk/repos/darcs/sge/source/dist/util/resources/schemas/qhost/qhost.xsd\">\n"
-            + "<host name='global'>\n"
-            + "<hostvalue name='arch_string'>-</hostvalue>\n"
-            + "<hostvalue name='num_proc'>-</hostvalue>\n"
-            + "<hostvalue name='m_socket'>-</hostvalue>\n"
-            + "<hostvalue name='m_core'>-</hostvalue>\n"
-            + "<hostvalue name='m_thread'>-</hostvalue>\n"
-            + "<hostvalue name='load_avg'>-</hostvalue>\n"
-            + "<hostvalue name='mem_total'>-</hostvalue>\n"
-            + "<hostvalue name='mem_used'>-</hostvalue>\n"
-            + "<hostvalue name='swap_total'>-</hostvalue>\n"
-            + "<hostvalue name='swap_used'>-</hostvalue>\n"
-            + "</host>\n"
-            + "<host name='ip-172-31-1-162.eu-central-1.compute.internal'>\n"
-            + "<hostvalue name='arch_string'>lx-amd64</hostvalue>\n"
-            + "<hostvalue name='num_proc'>2</hostvalue>\n"
-            + "<hostvalue name='m_socket'>1</hostvalue>\n"
-            + "<hostvalue name='m_core'>1</hostvalue>\n"
-            + "<hostvalue name='m_thread'>2</hostvalue>\n"
-            + "<hostvalue name='load_avg'>0.00</hostvalue>\n"
-            + "<hostvalue name='mem_total'>3.6G</hostvalue>\n"
-            + "<hostvalue name='mem_used'>311.6M</hostvalue>\n"
-            + "<hostvalue name='swap_total'>0.0</hostvalue>\n"
-            + "<hostvalue name='swap_used'>0.0</hostvalue>\n"
-            + "</host>\n"
-            + "</qhost>";
+    private static final String NEW_LINE = "\n";
+    private static final String QHOST_COMMAND = "qhost";
+    private static final String TYPE_XML = "-xml";
+    private static final String HOST = "-h";
+    private static final String GLOBAL = "global";
+    private final SimpleCmdExecutor simpleCmdExecutor;
 
     @Override
     public EngineType getProviderType() {
@@ -54,14 +42,26 @@ public class SgeHostProvider implements HostProvider {
     }
 
     @Override
-    public Listing<Host> listHosts() {
-        return getSgeHosts(JaxbUtils.unmarshall(QHOST_XML, SgeHostListing.class));
+    public Listing<Host> listHosts(HostFilter hostNames) {
+        final String[] hostCommand = buildRequest(hostNames);
+        final CommandResult commandResult = simpleCmdExecutor.execute(hostCommand);
+
+        if (commandResult.getExitCode() != 0) {
+            throw new IllegalStateException(String.format("Exit code: %s; Error output: %s; Output: %s",
+                    commandResult.getExitCode(), String.join(NEW_LINE, commandResult.getStdErr()),
+                    String.join(NEW_LINE, commandResult.getStdOut())));
+        }
+        return getSgeHosts(JaxbUtils.unmarshall(String.join(NEW_LINE,
+                        commandResult.getStdOut()),
+                SgeHostListing.class));
     }
 
-    final Listing<Host> getSgeHosts(SgeHostListing sgeHostListing) {
-        return new Listing<>(
-                CollectionUtils.emptyIfNull(sgeHostListing.getSgeHost()).stream()
-                        .map(this::fillElements).collect(Collectors.toList())
+    private Listing<Host> getSgeHosts(final SgeHostListing sgeHostListing) {
+        return new Listing<>(CollectionUtils.emptyIfNull(sgeHostListing.getSgeHost())
+                .stream()
+                .map(this::fillElements)
+                .filter(host -> !host.getHostname().equals(GLOBAL))
+                .collect(Collectors.toList())
         );
     }
 
@@ -85,7 +85,16 @@ public class SgeHostProvider implements HostProvider {
                 .build();
     }
 
-    void setXml(String xml) {
-        QHOST_XML = xml;
+    private static String[] buildRequest(HostFilter hostFilter) {
+        final List<String> commands = new ArrayList<>();
+        commands.add(QHOST_COMMAND);
+        Optional.ofNullable(hostFilter).map(HostFilter::getHosts)
+                .filter(CollectionUtils::isNotEmpty)
+                .ifPresent(hosts -> {
+                    commands.add(HOST);
+                    commands.addAll(hosts);
+                });
+        commands.add(TYPE_XML);
+        return commands.toArray(new String[0]);
     }
 }

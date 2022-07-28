@@ -1,6 +1,7 @@
 package com.example.pet.service;
 
 import com.example.pet.entity.EngineType;
+import com.example.pet.entity.HostFilter;
 import com.example.pet.entity.Listing;
 import com.example.pet.entity.host.Host;
 import com.example.pet.provider.host.HostProvider;
@@ -20,8 +21,8 @@ public class HostOperationProviderService {
 
     private Map<EngineType, HostProvider> providers;
 
-    public Listing<Host> hostListing() {
-        return getProvider().listHosts();
+    public Listing<Host> hostListing(HostFilter hostNames) {
+        return getProvider().listHosts(hostNames);
     }
 
     @Autowired

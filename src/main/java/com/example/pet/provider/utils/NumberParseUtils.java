@@ -1,15 +1,19 @@
 package com.example.pet.provider.utils;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.springframework.http.HttpStatus;
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class NumberParseUtils {
 
-    static final String NUMERIC_STRING_REGEX = "\\d+";
-    static final String SUB_GIGO = "G";
-    static final String SUB_MEGA = "M";
-    static final String SUB_KILO = "K";
-    static final String EMPTY_VALUE = "-";
-
-    private NumberParseUtils() {
-    }
+    private static final String NUMERIC_STRING_REGEX = "\\d+";
+    public static final String DOT = ".";
+    private static final String SUB_GIGO = "G";
+    private static final String SUB_MEGA = "M";
+    private static final String SUB_KILO = "K";
+    public static final String EMPTY_STRING = "";
+    private static final String EMPTY_VALUE = "-";
 
     public static Integer toInt(final String value) {
         if (value.trim().equals(EMPTY_VALUE)) {
@@ -20,38 +24,22 @@ public final class NumberParseUtils {
             return Integer.parseInt(value);
         }
 
-        throw new IllegalArgumentException(String.format("Cannot be converted to Integer: %s", value));
+        throw new IllegalArgumentException(HttpStatus.NOT_FOUND +
+                String.format("Cannot be converted to Integer: %s", value));
     }
 
     public static Double toDouble(final String value) {
         if (value.trim().equals(EMPTY_VALUE)) {
             return null;
         }
-
-        if (value.matches(NUMERIC_STRING_REGEX) || value.contains(".")) {
-            return Double.parseDouble(value);
-        }
-
-        throw new IllegalArgumentException(String.format("Cannot be converted to Double: %s", value));
+        return lettersToDigits(value);
     }
 
     public static Long toLong(final String value) {
         if (value.trim().equals(EMPTY_VALUE)) {
             return null;
         }
-        if (value.contains(SUB_GIGO)) {
-            return (long) (Double.parseDouble(value.replace(SUB_GIGO, "")) * 1_000_000_000);
-        }
-        if (value.contains(SUB_MEGA)) {
-            return (long) (Double.parseDouble(value.replace(SUB_MEGA, "")) * 1_000_000);
-        }
-        if (value.contains(SUB_KILO)) {
-            return (long) (Float.parseFloat(value.replace(SUB_KILO, "")) * 1_000);
-        }
-        if (value.matches(NUMERIC_STRING_REGEX)) {
-            return Long.parseLong(value);
-        }
-        throw new IllegalArgumentException(String.format("Cannot be converted to Long: %s", value));
+        return (long) lettersToDigits(value);
     }
 
     public static String checkString(final String value) {
@@ -59,5 +47,31 @@ public final class NumberParseUtils {
             return null;
         }
         return value;
+    }
+
+    public static boolean isNumber(final String state) {
+        try {
+            Double.parseDouble(state);
+            return true;
+        } catch (final NumberFormatException exception) {
+            return false;
+        }
+    }
+
+    private static double lettersToDigits(final String value) {
+        if (value.contains(SUB_GIGO)) {
+            return Double.parseDouble(value.replace(SUB_GIGO, EMPTY_STRING)) * 1_000_000_000;
+        }
+        if (value.contains(SUB_MEGA)) {
+            return Double.parseDouble(value.replace(SUB_MEGA, EMPTY_STRING)) * 1_000_000;
+        }
+        if (value.contains(SUB_KILO)) {
+            return Double.parseDouble(value.replace(SUB_KILO, EMPTY_STRING)) * 1_000;
+        }
+        if (value.contains(DOT) || value.matches(NUMERIC_STRING_REGEX)) {
+            return Double.parseDouble(value);
+        }
+        throw new IllegalArgumentException(HttpStatus.NOT_FOUND +
+                String.format("Cannot parse value: %s", value));
     }
 }
