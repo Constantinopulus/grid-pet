@@ -5,7 +5,6 @@ import com.example.pet.entity.Listing;
 import com.example.pet.entity.host.Host;
 import com.example.pet.provider.host.HostProvider;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
